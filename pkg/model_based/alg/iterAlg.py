@@ -50,6 +50,6 @@ def iter_alg(
         x = x - step * linop.ftran(linop.fmult(x) - y)
         x = prox.prox(x)
 
-    np.save(os.path.join('saved_results', 'baseline'), snr_list)
+    # np.save(os.path.join('saved_results', 'baseline'), snr_list)
 
     return x
