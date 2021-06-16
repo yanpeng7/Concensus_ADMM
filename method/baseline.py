@@ -12,8 +12,11 @@ import os
 from jax import dlpack as jax_dlpack
 from torch.utils import dlpack as torch_dlpack
 import time
+import json
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+with open('../config.json') as File:
+    config = json.load(File)
 
 """
 CT parameters
@@ -30,12 +33,19 @@ down_ct = cv2.resize(ct, (N, N))
 Configure CT projection operator and generate synthetic measurements
 """
 
-num_iter = 100
-gamma = 1e-6
-rho = 10
-tau = 1
-lambda_TV = 1
-num_iter_TV = 100
+num_iter = config['method']['proposed']['num_iter']
+gamma = config['method']['proposed']['gamma']
+rho = config['method']['proposed']['rho']
+tau = config['method']['proposed']['tau']
+lambda_TV = config['method']['proposed']['lambda_TV']
+num_iter_TV = config['method']['proposed']['num_iter_TV']
+
+# num_iter = 100
+# gamma = 1e-6
+# rho = 10
+# tau = 1
+# lambda_TV = 1
+# num_iter_TV = 100
 
 xin = jax.device_put(down_ct)  # Convert to jax type, push to GPU
 

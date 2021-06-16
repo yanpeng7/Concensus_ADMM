@@ -1,0 +1,39 @@
+{
+      "setting": {
+
+                "gpu_index": "3",
+                "method": "baseline_ADMM_WJ"
+      },
+
+      "dataset": {
+                "set5": {
+                        "img_dim": 512
+                }
+      },
+
+      "method": {
+                "baseline": {
+
+                        "num_iter": 100,
+                        "gamma": 1e-6,
+                        "rho": 10,
+                        "tau": 1,
+                        "beta": 100,
+                        "lambda_TV": 1,
+                        "num_iter_TV": 100
+
+                },
+
+                "proposed": {
+
+                        "num_iter": 100,
+                        "gamma": 1e-6,
+                        "rho": 10,
+                        "tau": 1,
+                        "beta": 100,
+                        "lambda_TV": 1,
+                        "num_iter_TV": 100
+
+                }
+      }
+}

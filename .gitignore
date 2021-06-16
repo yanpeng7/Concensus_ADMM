@@ -7,3 +7,10 @@
 .idea/deployment.xml
 .idea/admm_jax.iml
 .DS_Store
+tests/realCT.py
+tests/backprojection.py
+test.py
+main.py
+dataset/dummy_CT.py
+config.json
+.idea/vcs.xml
