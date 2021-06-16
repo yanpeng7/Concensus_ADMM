@@ -15,7 +15,7 @@ import torch
 from concensus_SR_demo import ConsensusSR
 import json
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 with open('../config.json') as File:
     config = json.load(File)
 
@@ -69,16 +69,28 @@ def A_i(x):
     return A @ x
 
 
+# def A_i_batched(x_batched):
+#     return jax.pmap(A_i)(x_batched)
+
 def A_i_batched(x_batched):
-    return jax.pmap(A_i)(x_batched)
+    x_list = []
+    for j in range(4):
+        x_list.append(A_i(x_batched[j]))
+    return jnp.stack(x_list, axis=0)
 
 
 def A_i_adj(x):
     return A.adj(x)
 
 
+# def A_i_adj_batched(x_batched):
+#     return jax.pmap(A_i_adj)(x_batched)
+
 def A_i_adj_batched(x_batched):
-    return jax.pmap(A_i_adj)(x_batched)
+    x_list = []
+    for j in range(4):
+        x_list.append(A_i_adj(x_batched[j]))
+    return jnp.stack(x_list, axis=0)
 
 
 def jax2torch(x):
@@ -110,7 +122,7 @@ def lambda_step(l_x_hat, l_y_hat, l_lambda_hat):
     return result
 
 
-print("algorithm started now fucking wait")
+print("algorithm started")
 start_time = time.time()
 
 # main algorithm
@@ -119,18 +131,28 @@ for i in range(num_iter):
     y_hat = y_hat - gamma * A_i_adj_batched(A_i_batched(y_hat) - d) - gamma * rho * (
             y_hat - linop.fmult(x_hat) + lambda_hat)
 
-    # x step
-    prox_in = 1 * 1 * (x_hat - linop.ftran(linop.fmult(x_hat) - y_hat - lambda_hat))
+    # if i % 4 == 0:
+    #     plt.imshow(x_hat, cmap="gray")
+    #     plt.colorbar()
+    #     plt.title("before prox")
+    #     plt.show()
+
+    # x step tau * rho
+    prox_in = x_hat - tau * rho * linop.ftran(linop.fmult(x_hat) - y_hat - lambda_hat)
     prox_in = jax2torch(prox_in)
     prox_out = prior.prox(prox_in)
     x_hat = torch2jax(prox_out)
+
+    # if i % 4 == 0:
+    #     plt.imshow(x_hat, cmap="gray")
+    #     plt.colorbar()
+    #     plt.title("after prox")
+    #     plt.show()
 
     # lambda step
     lambda_hat = lambda_step(x_hat, y_hat, lambda_hat)
     print(f'iteration {i} SNR: {metric.psnr(xin, x_hat)}')
 
-    # if i % 10 == 0:
-    #     plt.imshow()
 
 print("--- %s seconds ---" % (time.time() - start_time))
 

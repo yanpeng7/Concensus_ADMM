@@ -14,7 +14,7 @@ from torch.utils import dlpack as torch_dlpack
 import time
 import json
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 with open('../config.json') as File:
     config = json.load(File)
 

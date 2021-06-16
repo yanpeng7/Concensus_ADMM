@@ -18,9 +18,8 @@
                         "gamma": 1e-6,
                         "rho": 10,
                         "tau": 1,
-                        "beta": 100,
                         "lambda_TV": 1,
-                        "num_iter_TV": 100
+                        "num_iter_TV": 20
 
                 },
 
@@ -28,11 +27,10 @@
 
                         "num_iter": 100,
                         "gamma": 1e-6,
-                        "rho": 10,
-                        "tau": 1,
-                        "beta": 100,
-                        "lambda_TV": 1,
-                        "num_iter_TV": 100
+                        "rho": 100,
+                        "tau": 1e-2,
+                        "lambda_TV": 1e1,
+                        "num_iter_TV": 30
 
                 }
       }
