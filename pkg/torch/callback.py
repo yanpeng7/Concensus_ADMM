@@ -181,6 +181,38 @@ class Tensorboard(Callback):
                 if image[k].shape.__len__() == 4 and (image[k].shape[1] == 1 or image[k].shape[1] == 3):
                     self.tb_writer.add_images(tag='epoch/' + k, img_tensor=normalize_(image[k]), global_step=epoch)
 
+    def manual_add(self, global_step, log=None, image=None, text=None, hparams=None, tag_prefix=''):
+        if self.tb_writer is not None:
+            if log is not None:
+                for i, k in enumerate(log, start=1):
+                    self.tb_writer.add_scalar(tag=tag_prefix + k, scalar_value=log[k], global_step=global_step)
+
+            if image is not None:
+                for i, k in enumerate(image, start=1):
+                    if image[k].shape.__len__() == 4 and (image[k].shape[1] == 1 or image[k].shape[1] == 3):
+                        self.tb_writer.add_images(
+                            tag=tag_prefix + k, img_tensor=normalize_(image[k]), global_step=global_step)
+                    elif image[k].shape.__len__() == 3:
+                        self.tb_writer.add_image(
+                            tag=tag_prefix + k, img_tensor=normalize_(image[k]), global_step=global_step)
+                    elif image[k].shape.__len__() == 2 :
+                        self.tb_writer.add_image(
+                            tag=tag_prefix + k, img_tensor=normalize_(image[k].unsqueeze(0)), global_step=global_step)
+
+            if text is not None:
+                for i, k in enumerate(text, start=1):
+                    self.tb_writer.add_text(
+                        tag=tag_prefix + k,
+                        text_string=text[k].replace('\n', '\n\n'),
+                        global_step=global_step
+                    )
+            if hparams is not None:
+                for i, k in enumerate(hparams, start=1):
+                    self.tb_writer.add_hparams(
+                        hparam_dict=hparams['hparam_dict'],
+                        metric_dict=hparams['metric_dict'],
+                        run_name='up2date'
+                    )
 
 class Matplotlib(Callback):
     import matplotlib.pyplot as plt

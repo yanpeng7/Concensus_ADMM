@@ -10,7 +10,6 @@
 tests/realCT.py
 tests/backprojection.py
 test.py
-main.py
 dataset/dummy_CT.py
 config.json
 .idea/vcs.xml

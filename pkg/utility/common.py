@@ -26,3 +26,15 @@ def dict2md_table(ipt: dict):
         ret += '\n\n'
 
     return ret
+
+def get_dict_key_iterate(x, ret=None, string=''):
+    if ret is None:
+        ret = []
+
+    if isinstance(x, dict):
+        for k in x:
+            get_dict_key_iterate(x[k], ret, k if string == '' else string + '.' + k)
+    else:
+        ret.append(string)
+
+    return ret

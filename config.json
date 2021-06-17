@@ -1,9 +1,13 @@
 {
       "setting": {
 
-                "gpu_index": "3",
-                "method": "baseline_ADMM_WJ"
+                "gpu_index": "1",
+                "method": "proposed",
+
+                "root_path": "/export1/project/gan.weijie/Consensus_ADMM_results/",
+                "proj_name": "tmp"
       },
+
 
       "dataset": {
                 "set5": {
@@ -26,10 +30,10 @@
                 "proposed": {
 
                         "num_iter": 100,
-                        "gamma": 1e-6,
+                        "gamma": 1e-3,
                         "rho": 100,
-                        "tau": 1e-2,
-                        "lambda_TV": 1e1,
+                        "tau": 1e-3,
+                        "lambda_TV": 1e-11,
                         "num_iter_TV": 30
 
                 }
