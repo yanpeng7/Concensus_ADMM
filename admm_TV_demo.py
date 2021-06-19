@@ -85,9 +85,9 @@ Show recovered image
 
 fig, ax = plot.subplots(nrows=1, ncols=3, figsize=(15, 6))
 plot.imview(xin, title="Ground truth", fig=fig, ax=ax[0])
-plot.imview(x0, title="FBP Reconstruction: %.2f (dB)" % metric.psnr(xin, x0), fig=fig, ax=ax[1])
+plot.imview(x0, title="FBP Reconstruction: %.2f (dB)" % metric.snr(xin, x0), fig=fig, ax=ax[1])
 plot.imview(
-    admm_.x, title="TV Reconstruction: %.2f (dB)" % metric.psnr(xin, admm_.x), fig=fig, ax=ax[2]
+    admm_.x, title="TV Reconstruction: %.2f (dB)" % metric.snr(xin, admm_.x), fig=fig, ax=ax[2]
 )
 fig.show()
 

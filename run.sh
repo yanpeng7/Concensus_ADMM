@@ -2,13 +2,13 @@ PROJ_NAME_PREFIX='proposed'
 
 for num_iter in 100
 do
-  for gamma in 0.000001 0.00001 0.0001
+  for gamma in 0.00000001 0.0000001 0.000001 0.00001 0.0001
   do
-    for rho in 0.000001 0.00001 0.0001
+    for rho in 1000 100 10 1 0.1 0.001
     do
-        for tau in 0.000001 0.00001 0.0001
+        for tau in 0.1 0.001 0.0001 0.00001 0.000001
         do
-          for lambda_TV in 0.000001 0.00001 0.0001 0.001 0.01
+          for lambda_TV in 0.00001 0.0001 0.001 0.1 1 10
           do
             for num_iter_TV in 30
             do

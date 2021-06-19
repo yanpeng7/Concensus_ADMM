@@ -1,17 +1,17 @@
 {
       "setting": {
 
-                "gpu_index": "1",
+                "gpu_index": "0,1,2,3",
                 "method": "proposed",
 
-                "root_path": "/export1/project/gan.weijie/Consensus_ADMM_results/",
+                "root_path": "/export/project/y.yanpeng/ADMM_results/",
                 "proj_name": "tmp"
       },
 
 
       "dataset": {
                 "set5": {
-                        "img_dim": 512
+                        "img_dim": 256
                 }
       },
 
@@ -30,11 +30,11 @@
                 "proposed": {
 
                         "num_iter": 100,
-                        "gamma": 1e-3,
+                        "gamma": 1e-6,
                         "rho": 100,
-                        "tau": 1e-3,
-                        "lambda_TV": 1e-11,
-                        "num_iter_TV": 30
+                        "tau": 1e-2,
+                        "lambda_TV": 1e1,
+                        "num_iter_TV": 10
 
                 }
       }
