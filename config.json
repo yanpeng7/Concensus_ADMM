@@ -1,7 +1,7 @@
 {
       "setting": {
 
-                "gpu_index": "1",
+                "gpu_index": "2",
                 "method": "proposed",
                 "root_path": "/export/project/y.yanpeng/ADMM_results/",
                 "proj_name": "tmp"
@@ -32,7 +32,7 @@
                         "lambda_TV": 1,
                         "num_iter_TV": 50,
                         "A_scaling": 2,
-                        "kernel_type": "gaussian",
+                        "kernel_type": "none",
                         "A_impl": "seq"
                 }
       }

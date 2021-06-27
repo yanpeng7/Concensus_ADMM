@@ -20,3 +20,6 @@ admm_TV_demo.py
 admm_TV_demo.py
 B_impl.py
 compare_snr.py
+*.npy
+speed_test.py
+visualize_snr.py
