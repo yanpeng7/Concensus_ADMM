@@ -5,132 +5,100 @@ import cv2
 from scico.linop.radon import ParallelBeamProj
 import jax.numpy as jnp
 import matplotlib.pyplot as plt
-from pkg.model_based.prox.TV import TVOperator
-import torch
-from scico import admm, functional, linop, loss, metric, plot
-import os
-from jax import dlpack as jax_dlpack
-from torch.utils import dlpack as torch_dlpack
+from scico import metric
 import time
-import json
+import JAX_TV
+import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-with open('../config.json') as File:
-    config = json.load(File)
+def run(config):
+    num_iter = int(config.method.baseline.num_iter)
+    gamma = float(config.method.baseline.gamma)
+    rho = float(config.method.baseline.rho)
+    tau = float(config.method.baseline.tau)
+    lambda_TV = float(config.method.baseline.lambda_TV)
+    num_iter_TV = int(config.method.baseline.num_iter_TV)
+    N = int(config.dataset.ct_sample.img_dim)
+    n_projection = int(config.dataset.ct_sample.num_projection)
 
-"""
-CT parameters
-"""
+    """
+    Load CT image
+    """
 
-N = 256  # dimensions and number of detectors per dimension (so 1 detector per pixel)
-n_projection = 180  # number of angles
+    matContent = sio.loadmat('dataset/CT_images_preprocessed.mat', squeeze_me=True)
+    ct = matContent['img_cropped'][:, :, 0]
+    down_ct = cv2.resize(ct, (N, N))
 
-matContent = sio.loadmat('../dataset/CT_images_preprocessed.mat', squeeze_me=True)
-ct = matContent['img_cropped'][:, :, 0]
-down_ct = cv2.resize(ct, (N, N))
+    xin = jax.device_put(down_ct)  # Convert to jax type, push to GPU
 
-"""
-Configure CT projection operator and generate synthetic measurements
-"""
+    """
+    Configure CT projection operator and generate synthetic measurements
+    """
 
-num_iter = config['method']['proposed']['num_iter']
-gamma = config['method']['proposed']['gamma']
-rho = config['method']['proposed']['rho']
-tau = config['method']['proposed']['tau']
-lambda_TV = config['method']['proposed']['lambda_TV']
-num_iter_TV = config['method']['proposed']['num_iter_TV']
+    angles = np.linspace(0, np.pi, n_projection)  # evenly spaced projection angles
 
-# num_iter = 100
-# gamma = 1e-6
-# rho = 10
-# tau = 1
-# lambda_TV = 1
-# num_iter_TV = 100
+    A = ParallelBeamProj(xin.shape, 1, N, angles)  # Radon transform operator
+    d = A @ xin  # Sinogram
 
-xin = jax.device_put(down_ct)  # Convert to jax type, push to GPU
+    # initialize x_hat to be the back-projection of d
+    x_hat_in = A.fbp(d)
+    y_hat_in = x_hat_in
+    lambda_hat_in = jnp.zeros_like(y_hat_in)
 
-"""
-Configure CT projection operator and generate synthetic measurements
-"""
+    def A_i(A_func, x):
+        return A_func @ x
 
-angles = np.linspace(0, np.pi, n_projection)  # evenly spaced projection angles
+    def A_i_adj(A_func, x):
+        return A_func.adj(x)
 
-A = ParallelBeamProj(xin.shape, 1, N, angles)  # Radon transform operator
-d = A @ xin  # Sinogram
+    @jax.jit
+    def lambda_step(l_x_hat, l_y_hat, l_lambda_hat):
+        result = l_lambda_hat + l_y_hat - l_x_hat
+        return result
 
-# initialize x_hat to be the back-projection of d
-x_hat = A.fbp(d)
-y_hat = x_hat
-lambda_hat = jnp.zeros_like(y_hat)
+    @jax.jit
+    def x_step(x_y_hat, x_lambda_hat):
+        return x_y_hat + x_lambda_hat
 
-# prior config
-prior = TVOperator(lambda_TV, num_iter_TV)
-prior.lambda_ = prior.lambda_ / rho
+    def main_body_func(iteration, init_vals):
+        x_hat, y_hat, lambda_hat = init_vals
 
+        # y step can not jit due to A being implemented in Astra
+        y_hat = y_hat - gamma * A_i_adj(A_i(y_hat) - d) - gamma * rho * (
+                y_hat - x_hat + lambda_hat)
 
-@jax.jit
-def lambda_step(l_x_hat, l_y_hat, l_lambda_hat):
-    result = l_lambda_hat + l_y_hat - l_x_hat
-    return result
+        # x step tau * rho
+        prox_in = x_step(y_hat, lambda_hat)
+        x_hat = JAX_TV.TotalVariation_Proximal(prox_in, lambda_TV / rho * tau, num_iter_TV)
 
+        # lambda step
+        lambda_hat = lambda_step(x_hat, y_hat, lambda_hat)
 
-plt.imshow(x_hat, cmap="gray")
-plt.title("Input Image")
-plt.show()
+        return x_hat, y_hat, lambda_hat
 
+    # snr_list = []
 
-# TV_prox solver using built in solver- doesn't work well
-def prox_TV(x):
-    λ = 5e-0  # L1 norm regularization parameter
-    ρ = 5e-0  # ADMM penalty parameter
-    maxiter = 20  # Number of ADMM iterations
+    print("algorithm started")
+    start_time = time.time()
 
-    g_list = [λ * functional.L1Norm()]  # Regularization functionals Fi
-    C_list = [linop.FiniteDifference(input_shape=x.shape)]  # Analysis operators Ci
-    rho_list = [ρ]  # ADMM parameters
+    x_hat_out, _, _ = jax.lax.fori_loop(1, num_iter, body_fun=main_body_func,
+                                        init_val=(x_hat_in, y_hat_in, lambda_hat_in))
 
-    f = loss.SquaredL2Loss(y=x, A=None)
+    x_hat_out.block_until_ready()
 
-    admm_ = admm.ADMMQuadraticLoss(
-        f=f,
-        g_list=g_list,
-        C_list=C_list,
-        rho_list=rho_list,
-        x_solver_kwargs={"maxiter": 18},
-        maxiter=maxiter,
-        x0=x,
-    )
-    admm_.solve()
-    return admm_.x
+    running_time = time.time() - start_time
+    print("--- %s seconds ---" % running_time)
+    print(f'final SNR: {metric.snr(xin, x_hat_out)}')
 
-start_time = time.time()
+    # np.save(os.path.join('saved', 'baseline'), snr_list)
 
-# main algorithm
-for i in range(num_iter):
-    # y step
-    y_hat = y_hat - gamma * A.adj(A @ y_hat - d) - gamma * rho * (y_hat - x_hat + lambda_hat)
-
-    # x step
-
-    #  naive conversion
-    # torch_prox_input = torch.from_numpy(np.array(y_hat + lambda_hat))
-    # x_hat = (prior.prox(torch_prox_input)).numpy()
-    # x_hat = jax.device_put(x_hat)
-
-    #  around 35% faster when using dlpack
-    prox_in = y_hat + lambda_hat
-    prox_in = torch_dlpack.from_dlpack(jax_dlpack.to_dlpack(prox_in))
-    prox_out = prior.prox(prox_in)
-    x_hat = jax_dlpack.from_dlpack(torch_dlpack.to_dlpack(prox_out))
-
-    # lambda step
-    lambda_hat = lambda_step(x_hat, y_hat, lambda_hat)
-    print(f'iteration {i} SNR: {metric.psnr(xin, x_hat)}')
-
-print("--- %s seconds ---" % (time.time() - start_time))
-
-
-plt.imshow(x_hat, cmap="gray")
-plt.title("output image")
-plt.colorbar()
-plt.show()
+    fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
+    im1 = axes[0].imshow(x_hat_in, cmap="gray")
+    im2 = axes[1].imshow(x_hat_out, cmap="gray")
+    im3 = axes[2].imshow(xin, cmap="gray")
+    axes[0].title.set_text(f'input SNR: {"{:.2f}".format(metric.snr(xin, x_hat_in))}')
+    axes[1].title.set_text(f'output SNR: {"{:.2f}".format(metric.snr(xin, x_hat_out))}')
+    axes[2].title.set_text('ground truth')
+    fig.colorbar(im1, ax=axes[0])
+    fig.colorbar(im2, ax=axes[1])
+    fig.colorbar(im3, ax=axes[2])
+    plt.show()

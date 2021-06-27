@@ -5,7 +5,6 @@ from scico.metric import snr
 
 @jax.jit
 def __L_fwd(pq):
-
     p_diff = jnp.pad(pq[0, 1:, :] - pq[0, :-1, :], ((1, 0), (0, 0)))
     q_diff = jnp.pad(pq[1, :, 1:] - pq[1, :, :-1], ((0, 0), (1, 0)))
 
@@ -14,15 +13,13 @@ def __L_fwd(pq):
 
 @jax.jit
 def __L_tran(x):
-
     return jnp.stack([
         jnp.pad(x[:-1, :] - x[1:, :], ((0, 1), (0, 0))), jnp.pad(x[:, :-1] - x[:, 1:], ((0, 0), (0, 1)))
-        ], axis=0)
+    ], axis=0)
 
 
 @jax.jit
 def __PC(x, C):
-
     x = jnp.maximum(x, C[0])
     x = jnp.minimum(x, C[1])
 
@@ -31,7 +28,6 @@ def __PC(x, C):
 
 @jax.jit
 def __PP(x):
-
     denominator = jnp.sqrt(x[0, :, :] ** 2 + x[1, :, :] ** 2)
     denominator = jnp.maximum(denominator, 1)
 
@@ -59,7 +55,6 @@ def TotalVariation_Proximal(
         max_iter: int = 100,
         C: tuple = (-float('inf'), float('inf'))
 ) -> jax.abstract_arrays:
-
     """
     solve the proximal of the isotropic Total Variation with the form of
 
@@ -94,7 +89,6 @@ def TotalVariation_Proximal(
 
 
 if __name__ == '__main__':
-
     from skimage.data import camera
     import numpy as np
     import matplotlib.pyplot as plt

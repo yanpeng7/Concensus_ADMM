@@ -1,15 +1,12 @@
 import numpy as np
-
 import jax
-
-from xdesign import Foam, discrete_phantom
-
 import scico.numpy as snp
 from scico import admm, functional, linop, loss, metric, plot
 from scico.linop.radon import ParallelBeamProj
 import scipy.io as sio
 import cv2
 import os
+import time
 
 """
 Using SCICO ADMM SOLVER
@@ -72,12 +69,18 @@ admm_ = admm.ADMMQuadraticLoss(
     x0=x0
 )
 
+print("algorithm started")
+start_time = time.time()
+
 """
 Run the solver
 """
 admm_.solve()
 hist = admm_.itstat_object.history(transpose=True)
 admm_.x = snp.clip(admm_.x, 0, 1)
+
+running_time = time.time() - start_time
+print("--- %s seconds ---" % running_time)
 
 """
 Show recovered image
