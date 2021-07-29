@@ -19,6 +19,7 @@ def run(config):
     num_iter_TV = int(config.method.baseline.num_iter_TV)
     N = int(config.dataset.ct_sample.img_dim)
     n_projection = int(config.dataset.ct_sample.num_projection)
+    num_detector = int(config.dataset.ct_sample.num_detector)
 
     """
     Load CT image
@@ -36,7 +37,7 @@ def run(config):
 
     angles = np.linspace(0, np.pi, n_projection)  # evenly spaced projection angles
 
-    A = ParallelBeamProj(xin.shape, 1, N, angles)  # Radon transform operator
+    A = ParallelBeamProj(xin.shape, 1.0, num_detector, angles)  # Radon transform operator
     d = A @ xin  # Sinogram
 
     # initialize x_hat to be the back-projection of d
@@ -75,13 +76,46 @@ def run(config):
 
         return x_hat, y_hat, lambda_hat
 
-    # snr_list = []
+    snr_list = []
 
     print("algorithm started")
     start_time = time.time()
 
-    x_hat_out, _, _ = jax.lax.fori_loop(1, num_iter, body_fun=main_body_func,
-                                        init_val=(x_hat_in, y_hat_in, lambda_hat_in))
+    for i in range(num_iter):
+        # y step
+        y_hat_in = y_hat_in - gamma * A_i_adj(A, A_i(A, y_hat_in) - d) - gamma * rho * (
+                y_hat_in - x_hat_in + lambda_hat_in)
+
+        if i % 5 == 0:
+            # plt.imshow(d)
+            # plt.title('d')
+            # plt.colorbar()
+            # plt.show()
+
+            A_y = A_i(A, y_hat_in)
+            # plt.imshow(A_y)
+            # plt.title('A y')
+            # plt.colorbar()
+            # plt.show()
+
+            diff = d - A_y
+            plt.imshow(diff)
+            plt.title('diff')
+            plt.colorbar()
+            plt.show()
+
+        # x step tau * rho
+        prox_in = x_step(y_hat_in, lambda_hat_in)
+        x_hat_in = JAX_TV.TotalVariation_Proximal(prox_in, lambda_TV / rho * tau, num_iter_TV)
+        # lambda step
+        lambda_hat_in = lambda_step(x_hat_in, y_hat_in, lambda_hat_in)
+        print(f'iteration {i} SNR: {metric.snr(xin, x_hat_in)}')
+        snr_list.append(metric.snr(xin, x_hat_in))
+
+    x_hat_out = x_hat_in
+
+    # x_hat_out, _, _ = jax.lax.fori_loop(1, num_iter, body_fun=main_body_func,
+    #                                     init_val=(x_hat_in, y_hat_in, lambda_hat_in))
 
     x_hat_out.block_until_ready()
 
@@ -89,7 +123,7 @@ def run(config):
     print("--- %s seconds ---" % running_time)
     print(f'final SNR: {metric.snr(xin, x_hat_out)}')
 
-    # np.save(os.path.join('saved', 'baseline'), snr_list)
+    np.save(os.path.join('saved', 'baseline'), snr_list)
 
     fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(18, 5))
     im1 = axes[0].imshow(x_hat_in, cmap="gray")

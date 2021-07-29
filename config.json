@@ -1,7 +1,7 @@
 {
       "setting": {
 
-                "gpu_index": "2",
+                "gpu_index": "7",
                 "method": "proposed",
                 "root_path": "/export/project/y.yanpeng/ADMM_results/",
                 "proj_name": "tmp"
@@ -10,28 +10,29 @@
       "dataset": {
                 "ct_sample": {
                         "img_dim": 256,
+                        "num_detector": 256,
                         "num_projection": 180
                 }
       },
 
       "method": {
                 "baseline": {
-                        "num_iter": 100,
+                        "num_iter": 500,
                         "gamma": 1e-5,
-                        "rho": 100,
-                        "tau": 1e-2,
-                        "lambda_TV": 1,
+                        "rho": 1e3,
+                        "tau": 1e-1,
+                        "lambda_TV": 0.1,
                         "num_iter_TV": 50
                 },
 
                 "proposed": {
-                        "num_iter": 100,
+                        "num_iter": 1000,
                         "gamma": 1e-5,
-                        "rho": 100,
-                        "tau": 1e-2,
-                        "lambda_TV": 1,
+                        "rho": 1e3,
+                        "tau": 1e-1,
+                        "lambda_TV": 0.1,
                         "num_iter_TV": 50,
-                        "A_scaling": 2,
+                        "A_scaling": 1,
                         "kernel_type": "none",
                         "A_impl": "seq"
                 }
