@@ -4,29 +4,47 @@ import astra
 from scico import metric
 import JAX_TV
 import matplotlib.pyplot as plt
-from numpy_impl.numpy_B_impl import B_numpy, B_T_numpy
-from numpy_impl.numpy_A_impl import A_batched, A_adj_batched
+from numpy_impl.old_B_impl import B_numpy, B_T_numpy
+from numpy_impl.old_A_impl import A_batched, A_adj_batched
 import scipy.io as sio
 import time
 import jax.numpy as jnp
 
 if __name__ == '__main__':
-    num_iter = 1000
+    num_iter = 100
     gamma = 1e-5
     rho = 1e1
     tau = 0.1
-    lambda_TV = 1
+    lambda_TV = 0.1
     num_iter_TV = 50
     N = 256
     num_projection = 180  # need to set this in other places too, will fix later
     num_detector = 256  # need to set this in other places too, will fix later
-    shift_list = np.asarray([[0, 0.25], [0, 0.75], [0.25, 0], [0.75, 0]])
-    # shift_list = np.asarray([[0, 0.0]])
+    # shift_list = np.asarray([[0, 0.25], [0, 0.75], [0.25, 0], [0.75, 0]])
+    # shift_list = np.asarray([[0.10, 0], [0.05, 0], [0, 0.10], [0, 0.05]])
+    shift_list = np.asarray([[0, 0]])
 
     # load image
     matContent = sio.loadmat('../dataset/CT_images_preprocessed.mat', squeeze_me=True)
     ct = matContent['img_cropped'][:, :, 0]
+    plt.imshow(ct)
+    plt.title('0')
+    plt.show()
+    quit()
+
+    # ct = np.pad(ct, 50)
+    # plt.imshow(ct)
+    # plt.show()
+
     x_star = cv2.resize(ct, (N, N))
+
+    # y = B_numpy(x_star, shift_list)[0]
+    # print(y.shape)
+    # plt.imshow(y)
+    # plt.title('max shift y')
+    # plt.show()
+    # quit()
+
 
     # generate d
     proj_geom = astra.create_proj_geom('parallel', 1.0, num_detector, np.linspace(0, np.pi, num_projection))
@@ -73,7 +91,7 @@ if __name__ == '__main__':
     im1 = axes[0].imshow(x_init, cmap="gray")
     im2 = axes[1].imshow(x_hat, cmap="gray")
     im3 = axes[2].imshow(x_star, cmap="gray")
-    axes[0].title.set_text(f'input SNR: {"{:.2f}".format(metric.snr(x_star, x_hat))}')
+    axes[0].title.set_text(f'input SNR: {"{:.2f}".format(metric.snr(x_star, x_init))}')
     axes[1].title.set_text(f'output SNR: {"{:.2f}".format(metric.snr(x_star, x_hat))}')
     axes[2].title.set_text('ground truth')
     fig.colorbar(im1, ax=axes[0])

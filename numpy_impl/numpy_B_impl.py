@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def compute_weight_matrix(init_coordinate):
     [y_start, x_start] = init_coordinate
     y_length_mat = np.ones((3, 3))
@@ -27,6 +26,22 @@ def conv(image, kernel):
     return out
 
 
+def convNoDownsampling(image):
+    [H, W] = image.shape
+    K = 1
+    kernel = np.asarray([[0, 0, 0],
+                         [0, 0.0, 1],
+                         [0, 0.,0]])
+    padded_image = np.zeros((H, W))
+    padded_image[:H, :W] = image
+    out = np.zeros(padded_image.shape, dtype='float64')
+    for shift_x in range(-K, K + 1):
+        for shift_y in range(-K, K + 1):
+            shifted_image = np.roll(padded_image, (shift_y, shift_x), axis=(0, 1))
+            out += shifted_image * kernel[K - shift_y, K - shift_x]
+    return out
+
+
 def transposed_conv(image, kernel):
     [H, W] = image.shape
     K = (kernel.shape[0] - 1) // 2
@@ -49,23 +64,24 @@ def transposed_conv(image, kernel):
     return out
 
 
-def B_numpy(image, init_point_list):
-    out = []
-    for i, init_point in enumerate(init_point_list):
-        weight_matrix = compute_weight_matrix(init_point)
-        out.append(conv(image, weight_matrix))
-    out = np.stack(np.asarray(out), axis=0)
-    return out
+class OperatorB:
+    def __init__(self,
+                 init_point_list: np.ndarray,
+                 ):
+        self.init_point_list = init_point_list
 
+    def fmult(self, image):
+        out = []
+        for i, init_point in enumerate(self.init_point_list):
+            weight_matrix = compute_weight_matrix(init_point)
+            out.append(conv(image, weight_matrix))
+        out = np.stack(np.asarray(out), axis=0)
+        return out
 
-def B_T_numpy(image, init_point_list):
-    out = []
-    for i, init_point in enumerate(init_point_list):
-        weight_matrix = compute_weight_matrix(init_point)
-        out.append(transposed_conv(image[i], weight_matrix))
-    out = np.sum(np.asarray(out), axis=0)
-    return out
-
-
-if __name__ == '__main__':
-    pass
+    def adj(self, image):
+        out = []
+        for i, init_point in enumerate(self.init_point_list):
+            weight_matrix = compute_weight_matrix(init_point)
+            out.append(transposed_conv(image[i], weight_matrix))
+        out = np.sum(np.asarray(out), axis=0)
+        return out
